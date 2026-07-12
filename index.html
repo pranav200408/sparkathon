@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Critical Case Command Center</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/panels.css" />
+    <link rel="stylesheet" href="css/components.css" />
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="logo-pulse">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h1>CRITICAL CASE COMMAND CENTER</h1>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+            <p class="loading-text">Initializing secure connection...</p>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="hidden">
+        <!-- Top Navigation Bar -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <div class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <span class="logo-text">COMMAND CENTER</span>
+                    <span class="beta-badge">BETA</span>
+                </div>
+                <nav class="main-nav">
+                    <button class="nav-btn active" data-view="map">THE MAP</button>
+                    <button class="nav-btn" data-view="wire">THE WIRE</button>
+                    <button class="nav-btn" data-view="globe">THE GLOBE</button>
+                </nav>
+            </div>
+            <div class="top-bar-center">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="global-search" placeholder="LOCATE..." />
+                    <kbd>/</kbd>
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <div class="time-zones">
+                    <div class="time-zone">
+                        <span class="tz-label">NYC</span>
+                        <span class="tz-time" id="tz-nyc">--:--</span>
+                    </div>
+                    <div class="time-zone">
+                        <span class="tz-label">LDN</span>
+                        <span class="tz-time" id="tz-ldn">--:--</span>
+                    </div>
+                    <div class="time-zone">
+                        <span class="tz-label">TYO</span>
+                        <span class="tz-time" id="tz-tyo">--:--</span>
+                    </div>
+                    <div class="time-zone">
+                        <span class="tz-label">UTC</span>
+                        <span class="tz-time" id="tz-utc">--:--</span>
+                    </div>
+                </div>
+                <div class="system-status" id="system-status">
+                    <span class="status-dot live"></span>
+                    <span class="status-text">LIVE</span>
+                </div>
+                <button class="btn-icon" id="btn-admin" title="Admin Panel">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="btn-primary" id="btn-signin">
+                    <i class="fas fa-sign-in-alt"></i>
+                    SIGN IN
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Left Sidebar -->
+            <aside class="sidebar left-sidebar">
+                <nav class="sidebar-nav">
+                    <button class="sidebar-btn active" data-panel="wire" title="Wire Feed">
+                        <i class="fas fa-bolt"></i>
+                        <span>WIRE</span>
+                    </button>
+                    <button class="sidebar-btn" data-panel="chat" title="Chat">
+                        <i class="fas fa-comments"></i>
+                        <span>CHAT</span>
+                    </button>
+                    <button class="sidebar-btn" data-panel="teams" title="Teams">
+                        <i class="fas fa-users"></i>
+                        <span>TEAMS</span>
+                    </button>
+                    <button class="sidebar-btn" data-panel="available" title="Available Now">
+                        <i class="fas fa-user-check"></i>
+                        <span>AVAILABLE</span>
+                    </button>
+                    <button class="sidebar-btn" data-panel="predictions" title="Predictions">
+                        <i class="fas fa-brain"></i>
+                        <span>PREDICTIONS</span>
+                    </button>
+                    <button class="sidebar-btn" data-panel="templates" title="Templates">
+                        <i class="fas fa-file-alt"></i>
+                        <span>TEMPLATES</span>
+                    </button>
+                    <button class="sidebar-btn" data-panel="escalation" title="Escalation Matrix">
+                        <i class="fas fa-sitemap"></i>
+                        <span>ESCALATION</span>
+                    </button>
+                    <button class="sidebar-btn" data-panel="comms" title="Communications">
+                        <i class="fas fa-envelope-open-text"></i>
+                        <span>COMMS</span>
+                    </button>
+                    <button class="sidebar-btn" data-panel="outbreaks" title="Outbreaks">
+                        <i class="fas fa-virus"></i>
+                        <span>OUTBREAKS</span>
+                    </button>
+                </nav>
+            </aside>
+
+            <!-- Map Container -->
+            <div class="map-container">
+                <div id="world-map"></div>
+                
+                <!-- Map Controls -->
+                <div class="map-controls">
+                    <button class="map-control-btn" id="btn-filter" title="Filter">
+                        <i class="fas fa-filter"></i>
+                        <span>FILTER</span>
+                    </button>
+                    <button class="map-control-btn" id="btn-zoom-in" title="Zoom In">
+                        <i class="fas fa-plus"></i>
+                        <span>ZOOM IN</span>
+                    </button>
+                    <button class="map-control-btn" id="btn-zoom-out" title="Zoom Out">
+                        <i class="fas fa-minus"></i>
+                        <span>ZOOM OUT</span>
+                    </button>
+                    <button class="map-control-btn" id="btn-reset" title="Reset View">
+                        <i class="fas fa-sync"></i>
+                        <span>RESET</span>
+                    </button>
+                    <button class="map-control-btn" id="btn-signin-map" title="Sign In">
+                        <i class="fas fa-user"></i>
+                        <span>SIGN IN</span>
+                    </button>
+                    <button class="map-control-btn" id="btn-settings" title="Settings">
+                        <i class="fas fa-cog"></i>
+                        <span>SETTINGS</span>
+                    </button>
+                </div>
+
+                <!-- DEFCON Indicator -->
+                <div class="defcon-indicator" id="defcon-indicator">
+                    <div class="defcon-header">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>DEFCON LEVEL</span>
+                    </div>
+                    <div class="defcon-level" id="defcon-level">3</div>
+                    <div class="defcon-status">ELEVATED</div>
+                </div>
+
+                <!-- Live Ticker -->
+                <div class="live-ticker">
+                    <div class="ticker-badge">
+                        <span class="pulse-dot"></span>
+                        LIVE
+                    </div>
+                    <div class="ticker-content">
+                        <div class="ticker-text" id="ticker-text"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar - Wire Feed -->
+            <aside class="sidebar right-sidebar" id="wire-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-bolt"></i>
+                        <span>WIRE</span>
+                    </div>
+                    <div class="panel-stats">
+                        <span class="stat critical" id="wire-critical">0</span> CRITICAL
+                        <span class="stat high" id="wire-high">0</span> HIGH
+                        <span class="stat elevated" id="wire-elevated">0</span> ELEVATED
+                    </div>
+                    <div class="panel-controls">
+                        <button class="panel-btn" title="Minimize"><i class="fas fa-minus"></i></button>
+                        <button class="panel-btn" title="Maximize"><i class="fas fa-expand"></i></button>
+                        <button class="panel-btn" title="Close"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div class="panel-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search locations..." />
+                </div>
+                <div class="panel-tabs">
+                    <button class="tab-btn active">MOST ACTIVE</button>
+                    <button class="tab-btn">RECENT</button>
+                    <button class="tab-btn">CRITICAL</button>
+                </div>
+                <div class="panel-content" id="wire-feed">
+                    <!-- Wire items will be dynamically inserted -->
+                </div>
+            </aside>
+        </main>
+
+        <!-- Floating Panels Container -->
+        <div id="floating-panels">
+            <!-- Chat Panel -->
+            <div class="floating-panel chat-panel" id="chat-panel" style="display: none;">
+                <div class="panel-header draggable">
+                    <div class="panel-title">
+                        <i class="fas fa-comments"></i>
+                        <span>CHAT</span>
+                        <span class="online-count" id="chat-online">42 in chat</span>
+                    </div>
+                    <div class="panel-controls">
+                        <button class="panel-btn" title="Minimize"><i class="fas fa-minus"></i></button>
+                        <button class="panel-btn" title="Maximize"><i class="fas fa-expand"></i></button>
+                        <button class="panel-btn close-panel" title="Close"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div class="chat-tabs">
+                    <button class="chat-tab active">#LOBBY</button>
+                    <button class="chat-tab">#GENERAL</button>
+                    <button class="chat-tab">#MARKETS</button>
+                    <button class="chat-tab">#CRYPTO</button>
+                    <button class="chat-tab">#INCIDENTS</button>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Chat messages will be dynamically inserted -->
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Type a message..." />
+                    <button class="chat-send-btn" id="chat-send">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Available Now Panel -->
+            <div class="floating-panel available-panel" id="available-panel" style="display: none;">
+                <div class="panel-header draggable">
+                    <div class="panel-title">
+                        <i class="fas fa-user-check"></i>
+                        <span>AVAILABLE NOW</span>
+                    </div>
+                    <div class="panel-controls">
+                        <button class="panel-btn" title="Minimize"><i class="fas fa-minus"></i></button>
+                        <button class="panel-btn" title="Maximize"><i class="fas fa-expand"></i></button>
+                        <button class="panel-btn close-panel" title="Close"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div class="available-filters">
+                    <select id="available-region-filter">
+                        <option value="all">All Regions</option>
+                        <option value="americas">Americas</option>
+                        <option value="emea">EMEA</option>
+                        <option value="apac">APAC</option>
+                    </select>
+                    <select id="available-role-filter">
+                        <option value="all">All Roles</option>
+                        <option value="event-manager">Event Manager</option>
+                        <option value="ess">ESS</option>
+                        <option value="hcc">HCC</option>
+                        <option value="fls">FLS</option>
+                        <option value="seam">SEAM</option>
+                    </select>
+                </div>
+                <div class="available-stats">
+                    <div class="available-stat">
+                        <span class="stat-count available-count" id="available-online">0</span>
+                        <span class="stat-label">AVAILABLE</span>
+                    </div>
+                    <div class="available-stat">
+                        <span class="stat-count busy-count" id="available-busy">0</span>
+                        <span class="stat-label">BUSY</span>
+                    </div>
+                    <div class="available-stat">
+                        <span class="stat-count offline-count" id="available-offline">0</span>
+                        <span class="stat-label">OFFLINE</span>
+                    </div>
+                </div>
+                <div class="panel-content available-list" id="available-list">
+                    <!-- Available resources will be dynamically inserted -->
+                </div>
+            </div>
+
+            <!-- Outbreaks Panel -->
+            <div class="floating-panel outbreaks-panel" id="outbreaks-panel" style="display: none;">
+                <div class="panel-header draggable">
+                    <div class="panel-title">
+                        <i class="fas fa-virus"></i>
+                        <span>OUTBREAKS</span>
+                    </div>
+                    <div class="panel-stats">
+                        DISEASE OUTBREAKS <span class="stat-count">27</span> total
+                    </div>
+                    <div class="panel-controls">
+                        <button class="panel-btn" title="Minimize"><i class="fas fa-minus"></i></button>
+                        <button class="panel-btn" title="Maximize"><i class="fas fa-expand"></i></button>
+                        <button class="panel-btn close-panel" title="Close"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div class="outbreak-summary">
+                    <span class="outbreak-stat high">3 HIGH</span>
+                    <span class="outbreak-stat elevated">7 ELEVATED</span>
+                    <span class="outbreak-stat other">17 OTHER</span>
+                </div>
+                <div class="panel-content outbreak-list" id="outbreak-list">
+                    <!-- Outbreak items will be dynamically inserted -->
+                </div>
+            </div>
+
+            <!-- Communications Panel (Phase 3 audit trail) -->
+            <div class="floating-panel comms-panel" id="comms-panel" style="display: none;">
+                <div class="panel-header draggable">
+                    <div class="panel-title">
+                        <i class="fas fa-envelope-open-text"></i>
+                        <span>COMMUNICATIONS</span>
+                    </div>
+                    <div class="panel-controls">
+                        <button class="panel-btn" id="comms-refresh" title="Refresh"><i class="fas fa-sync"></i></button>
+                        <button class="panel-btn" title="Minimize"><i class="fas fa-minus"></i></button>
+                        <button class="panel-btn" title="Maximize"><i class="fas fa-expand"></i></button>
+                        <button class="panel-btn close-panel" title="Close"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div class="comms-stats">
+                    <div class="comms-stat">
+                        <span class="stat-count sent-count" id="comms-sent">0</span>
+                        <span class="stat-label">SENT</span>
+                    </div>
+                    <div class="comms-stat">
+                        <span class="stat-count draft-count" id="comms-draft">0</span>
+                        <span class="stat-label">DRAFT</span>
+                    </div>
+                    <div class="comms-stat">
+                        <span class="stat-count" id="comms-total">0</span>
+                        <span class="stat-label">TOTAL</span>
+                    </div>
+                </div>
+                <div class="panel-content comms-list" id="comms-feed">
+                    <!-- Communications will be dynamically inserted -->
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Chat Console (Bottom Center) -->
+        <div class="ai-console" id="ai-console">
+            <div class="ai-console-header">
+                <div class="ai-logo">
+                    <i class="fas fa-robot"></i>
+                    <span>AI ASSISTANT</span>
+                </div>
+                <div class="ai-status">
+                    <span class="status-dot live"></span>
+                    Connected to NVIDIA NIM
+                </div>
+            </div>
+            <div class="ai-chat-container" id="ai-chat-container">
+                <div class="ai-messages" id="ai-messages">
+                    <div class="ai-message system">
+                        <div class="message-content">
+                            Welcome to the Critical Case Command Center AI Assistant. I can help you:
+                            <ul>
+                                <li>Query active incidents</li>
+                                <li>Pull bank and location data</li>
+                                <li>Suggest escalation actions</li>
+                                <li>Generate incident summaries</li>
+                            </ul>
+                            Type your query below or use voice commands.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-input-container">
+                <button class="ai-btn" id="ai-voice-btn" title="Voice Input">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <input type="text" id="ai-input" placeholder="Ask AI about incidents, banks, escalations..." />
+                <button class="ai-btn primary" id="ai-send-btn" title="Send">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                <button class="ai-btn" id="ai-expand-btn" title="Expand">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Create Event FAB -->
+        <button class="fab-create-event" id="fab-create-event">
+            <i class="fas fa-plus"></i>
+            <span>CREATE EVENT</span>
+        </button>
+
+        <!-- Event Creation Modal -->
+        <div class="modal-overlay" id="event-modal-overlay" style="display: none;">
+            <div class="event-workflow" id="event-workflow">
+                <!-- Panel 1: Event Creation -->
+                <div class="workflow-panel event-creation-panel" id="panel-event-creation">
+                    <div class="panel-header draggable">
+                        <div class="panel-indicator green"></div>
+                        <div class="panel-title">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>EVENT CREATION</span>
+                        </div>
+                        <div class="panel-controls">
+                            <button class="panel-btn" title="Minimize"><i class="fas fa-minus"></i></button>
+                            <button class="panel-btn close-panel" title="Close"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <form id="event-form">
+                            <div class="form-group">
+                                <label>Case ID / Incident Number</label>
+                                <input type="text" id="event-case-id" placeholder="Auto-generated or enter manually" />
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Severity Level</label>
+                                    <select id="event-severity">
+                                        <option value="critical">CRITICAL</option>
+                                        <option value="high">HIGH</option>
+                                        <option value="elevated" selected>ELEVATED</option>
+                                        <option value="low">LOW</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Region</label>
+                                    <select id="event-region">
+                                        <option value="americas">Americas</option>
+                                        <option value="emea">EMEA</option>
+                                        <option value="apac">APAC</option>
+                                        <option value="global">Global</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Affected Bank(s)</label>
+                                <select id="event-banks" multiple>
+                                    <option value="jpmorgan">JPMorgan Chase</option>
+                                    <option value="bofa">Bank of America</option>
+                                    <option value="citi">Citigroup</option>
+                                    <option value="wells">Wells Fargo</option>
+                                    <option value="goldman">Goldman Sachs</option>
+                                    <option value="morgan">Morgan Stanley</option>
+                                    <option value="hsbc">HSBC</option>
+                                    <option value="barclays">Barclays</option>
+                                    <option value="deutsche">Deutsche Bank</option>
+                                    <option value="ubs">UBS</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="event-description" rows="4" placeholder="Describe the incident..."></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" id="btn-cancel-event">Cancel</button>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-microsoft"></i>
+                                    Create Teams Channel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Panel 2: Resource Availability -->
+                <div class="workflow-panel resource-panel" id="panel-resources">
+                    <div class="panel-header draggable">
+                        <div class="panel-indicator yellow"></div>
+                        <div class="panel-title">
+                            <i class="fas fa-users"></i>
+                            <span>RESOURCE AVAILABILITY</span>
+                        </div>
+                        <div class="panel-controls">
+                            <button class="panel-btn" title="Minimize"><i class="fas fa-minus"></i></button>
+                            <button class="panel-btn close-panel" title="Close"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="resource-filters">
+                            <select id="resource-region-filter">
+                                <option value="all">All Regions</option>
+                                <option value="americas">Americas</option>
+                                <option value="emea">EMEA</option>
+                                <option value="apac">APAC</option>
+                            </select>
+                            <select id="resource-role-filter">
+                                <option value="all">All Roles</option>
+                                <option value="event-manager">Event Manager</option>
+                                <option value="ess">ESS</option>
+                                <option value="hcc">HCC</option>
+                                <option value="fls">FLS</option>
+                                <option value="seam">SEAM</option>
+                            </select>
+                        </div>
+                        <div class="resource-list" id="resource-list">
+                            <!-- Resources will be dynamically inserted -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 3: Escalation Matrix -->
+                <div class="workflow-panel escalation-panel" id="panel-escalation">
+                    <div class="panel-header draggable">
+                        <div class="panel-indicator red"></div>
+                        <div class="panel-title">
+                            <i class="fas fa-sitemap"></i>
+                            <span>ESCALATION MATRIX</span>
+                        </div>
+                        <div class="panel-controls">
+                            <button class="panel-btn" title="Minimize"><i class="fas fa-minus"></i></button>
+                            <button class="panel-btn close-panel" title="Close"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="escalation-path">
+                            <div class="escalation-level active" data-level="1">
+                                <div class="level-badge">L1</div>
+                                <div class="level-info">
+                                    <span class="level-title">First Response</span>
+                                    <span class="level-desc">Service Desk / NOC</span>
+                                </div>
+                                <button class="btn-escalate" data-level="1">
+                                    <i class="fas fa-phone"></i>
+                                </button>
+                            </div>
+                            <div class="escalation-arrow"><i class="fas fa-arrow-down"></i></div>
+                            <div class="escalation-level" data-level="2">
+                                <div class="level-badge">L2</div>
+                                <div class="level-info">
+                                    <span class="level-title">Technical Support</span>
+                                    <span class="level-desc">Domain Experts / Engineers</span>
+                                </div>
+                                <button class="btn-escalate" data-level="2">
+                                    <i class="fas fa-phone"></i>
+                                </button>
+                            </div>
+                            <div class="escalation-arrow"><i class="fas fa-arrow-down"></i></div>
+                            <div class="escalation-level" data-level="3">
+                                <div class="level-badge">L3</div>
+                                <div class="level-info">
+                                    <span class="level-title">Management</span>
+                                    <span class="level-desc">Team Leads / Managers</span>
+                                </div>
+                                <button class="btn-escalate" data-level="3">
+                                    <i class="fas fa-phone"></i>
+                                </button>
+                            </div>
+                            <div class="escalation-arrow"><i class="fas fa-arrow-down"></i></div>
+                            <div class="escalation-level critical" data-level="4">
+                                <div class="level-badge">EXEC</div>
+                                <div class="level-info">
+                                    <span class="level-title">Executive</span>
+                                    <span class="level-desc">C-Suite / Directors</span>
+                                </div>
+                                <button class="btn-escalate" data-level="4">
+                                    <i class="fas fa-phone"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ai-suggestion">
+                            <i class="fas fa-robot"></i>
+                            <span>AI Recommendation: Based on severity, escalate to L2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 4: AI Activity Tracker -->
+                <div class="workflow-panel activity-panel" id="panel-activity">
+                    <div class="panel-header draggable">
+                        <div class="panel-indicator blue"></div>
+                        <div class="panel-title">
+                            <i class="fas fa-history"></i>
+                            <span>AI ACTIVITY TRACKER</span>
+                        </div>
+                        <div class="panel-controls">
+                            <button class="panel-btn" title="Minimize"><i class="fas fa-minus"></i></button>
+                            <button class="panel-btn close-panel" title="Close"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="activity-timeline" id="activity-timeline">
+                            <!-- Timeline items will be dynamically inserted -->
+                        </div>
+                        <div class="activity-actions">
+                            <button class="btn-secondary" id="btn-generate-summary">
+                                <i class="fas fa-file-alt"></i>
+                                Generate Summary
+                            </button>
+                            <button class="btn-secondary" id="btn-export-timeline">
+                                <i class="fas fa-download"></i>
+                                Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel Modal -->
+        <div class="modal-overlay" id="admin-modal-overlay" style="display: none;">
+            <div class="admin-panel" id="admin-panel">
+                <div class="admin-header">
+                    <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+                    <button class="panel-btn close-admin" title="Close"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="admin-content">
+                    <nav class="admin-nav">
+                        <button class="admin-nav-btn active" data-section="api">API Configuration</button>
+                        <button class="admin-nav-btn" data-section="data">Data Sources</button>
+                        <button class="admin-nav-btn" data-section="roles">Role Mappings</button>
+                        <button class="admin-nav-btn" data-section="escalation">Escalation Rules</button>
+                        <button class="admin-nav-btn" data-section="users">User Access</button>
+                    </nav>
+                    <div class="admin-sections">
+                        <!-- API Configuration -->
+                        <div class="admin-section active" id="section-api">
+                            <h3>API Configuration</h3>
+                            <div class="config-group">
+                                <label>NVIDIA NIM API Key</label>
+                                <input type="password" placeholder="Enter API key..." />
+                                <button class="btn-small">Test Connection</button>
+                            </div>
+                            <div class="config-group">
+                                <label>Microsoft Graph API (Teams)</label>
+                                <input type="password" placeholder="Enter client secret..." />
+                                <button class="btn-small">Authenticate</button>
+                            </div>
+                            <div class="config-group">
+                                <label>Power Automate Webhook URL</label>
+                                <input type="text" placeholder="https://..." />
+                                <button class="btn-small">Verify</button>
+                            </div>
+                        </div>
+                        <!-- Data Sources -->
+                        <div class="admin-section" id="section-data">
+                            <h3>Data Sources</h3>
+                            <div class="data-source-list">
+                                <div class="data-source-item">
+                                    <i class="fas fa-file-excel"></i>
+                                    <span>Resource Availability.xlsx</span>
+                                    <span class="status connected">Connected</span>
+                                </div>
+                                <div class="data-source-item">
+                                    <i class="fas fa-database"></i>
+                                    <span>Incident Database</span>
+                                    <span class="status connected">Connected</span>
+                                </div>
+                                <div class="data-source-item">
+                                    <i class="fab fa-microsoft"></i>
+                                    <span>SharePoint Knowledge Base</span>
+                                    <span class="status warning">Reconnect</span>
+                                </div>
+                            </div>
+                            <button class="btn-primary"><i class="fas fa-plus"></i> Add Data Source</button>
+                        </div>
+                        <!-- Role Mappings -->
+                        <div class="admin-section" id="section-roles">
+                            <h3>Role Mappings</h3>
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Role</th>
+                                        <th>Permissions</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Event Manager</td>
+                                        <td>Create, Edit, Escalate</td>
+                                        <td><button class="btn-small">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>ESS</td>
+                                        <td>View, Comment</td>
+                                        <td><button class="btn-small">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Admin</td>
+                                        <td>Full Access</td>
+                                        <td><button class="btn-small">Edit</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Escalation Rules -->
+                        <div class="admin-section" id="section-escalation">
+                            <h3>Escalation Rules</h3>
+                            <div class="rule-list">
+                                <div class="rule-item">
+                                    <span class="rule-condition">If severity = CRITICAL</span>
+                                    <span class="rule-action">Auto-escalate to L3</span>
+                                    <button class="btn-small">Edit</button>
+                                </div>
+                                <div class="rule-item">
+                                    <span class="rule-condition">If no response in 15 min</span>
+                                    <span class="rule-action">Escalate to next level</span>
+                                    <button class="btn-small">Edit</button>
+                                </div>
+                            </div>
+                            <button class="btn-primary"><i class="fas fa-plus"></i> Add Rule</button>
+                        </div>
+                        <!-- User Access -->
+                        <div class="admin-section" id="section-users">
+                            <h3>User Access Control</h3>
+                            <div class="user-list">
+                                <div class="user-item">
+                                    <div class="user-avatar">JD</div>
+                                    <div class="user-info">
+                                        <span class="user-name">John Doe</span>
+                                        <span class="user-role">Admin</span>
+                                    </div>
+                                    <button class="btn-small">Manage</button>
+                                </div>
+                                <div class="user-item">
+                                    <div class="user-avatar">AS</div>
+                                    <div class="user-info">
+                                        <span class="user-name">Alice Smith</span>
+                                        <span class="user-role">Event Manager</span>
+                                    </div>
+                                    <button class="btn-small">Manage</button>
+                                </div>
+                            </div>
+                            <button class="btn-primary"><i class="fas fa-user-plus"></i> Add User</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Detail Popup -->
+        <div class="bank-popup" id="bank-popup" style="display: none;">
+            <div class="bank-popup-header">
+                <h3 id="bank-popup-name">Bank Name</h3>
+                <button class="panel-btn close-popup"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="bank-popup-content">
+                <div class="bank-stats">
+                    <div class="bank-stat">
+                        <span class="stat-value" id="bank-active-incidents">0</span>
+                        <span class="stat-label">Active Incidents</span>
+                    </div>
+                    <div class="bank-stat">
+                        <span class="stat-value" id="bank-dependencies">0</span>
+                        <span class="stat-label">Dependencies</span>
+                    </div>
+                    <div class="bank-stat">
+                        <span class="stat-value" id="bank-critical-systems">0</span>
+                        <span class="stat-label">Critical Systems</span>
+                    </div>
+                </div>
+                <div class="bank-incidents" id="bank-incidents-list">
+                    <!-- Bank incidents will be inserted here -->
+                </div>
+                <div class="bank-actions">
+                    <button class="btn-secondary"><i class="fas fa-phone"></i> Contact</button>
+                    <button class="btn-primary"><i class="fas fa-plus"></i> New Incident</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div class="toast-container" id="toast-container"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/panels.js"></script>
+    <script src="js/ai-chat.js"></script>
+    <script src="js/events.js"></script>
+    <script src="js/realtime.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
